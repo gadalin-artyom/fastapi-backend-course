@@ -4,9 +4,8 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-from json_storage import JsonStorage
-from jsonbin import JsonBinStorage
 from cloudflare import CloudflareAI
+from jsonbin import JsonBinStorage
 
 load_dotenv()
 
@@ -34,8 +33,8 @@ class TaskTracker:
     def create_task(self, task: Task):
         ai_solution = self.ai.get_solution(task.name_task)
         task_with_solution = Task(
-            name_task=f"{task.name_task}\n\n Решение:\n{ai_solution}",
-            status=task.status
+            name_task=f'{task.name_task}\n\n Решение:\n{ai_solution}',
+            status=task.status,
         )
         self.storage.write_data(task_with_solution)
 
@@ -46,7 +45,7 @@ class TaskTracker:
         self.storage.update_data(task_id, new_info)
 
 
-# json_storage = JsonStorage()
+# json_storage = JsonStorage(Path('tasks.json'))
 # tracker = TaskTracker(json_storage)
 
 
@@ -54,12 +53,12 @@ class TaskTracker:
 # tracker = TaskTracker(jsonbin_storage)
 
 
-account_id_CF = os.getenv("ACCOUNT_ID_CLOUDFLARE")
-api_token_CF = os.getenv("API_TOKEN_CLOUDFLARE")
-model_CF = "@cf/meta/llama-3.1-8b-instruct"
+account_id_CF = os.getenv('ACCOUNT_ID_CLOUDFLARE')
+api_token_CF = os.getenv('API_TOKEN_CLOUDFLARE')
+model_CF = '@cf/meta/llama-3.1-8b-instruct'
 cloudflare = CloudflareAI(account_id_CF, api_token_CF, model_CF)
 
-jsonbin_storage= JsonBinStorage(API_KEY, BIN_ID)
+jsonbin_storage = JsonBinStorage(API_KEY, BIN_ID)
 tracker = TaskTracker(jsonbin_storage, cloudflare)
 
 
@@ -67,15 +66,18 @@ tracker = TaskTracker(jsonbin_storage, cloudflare)
 def get_tasks():
     return tracker.get_tasks()
 
+
 @app.post('/tasks', response_model=Task)
 def create_task(task: Task):
     tracker.create_task(task)
     return task
 
+
 @app.put('/tasks/{task_id}')
 def update_task(task_id: int, new_info: Task):
     tracker.change_task(task_id, new_info)
     return new_info
+
 
 @app.delete('/tasks/{task_id}')
 def delete_task(task_id: int):
